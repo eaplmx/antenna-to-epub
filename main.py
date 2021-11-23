@@ -93,12 +93,15 @@ def read_url(url, title='', author=''):
 			if (len(entry.links) > 0):
 				if initial_date < entry.updated < final_date:
 					url_to_read = entry.links[0].href
-					in_allowed_urls = False
-
-					for current_url in allowed_urls:
-						if current_url in url_to_read:
-							in_allowed_urls = True
-							break
+					
+					if include_all_urls:
+						in_allowed_urls = True
+					else:
+						in_allowed_urls = False
+						for current_url in allowed_urls:
+							if current_url in url_to_read:
+								in_allowed_urls = True
+								break
 
 					if in_allowed_urls:
 						print(f'Loading URL: {url_to_read}')
@@ -226,11 +229,20 @@ if selected_week.strip() != '':
 
 initial_date = pytz.utc.localize(datetime.fromisocalendar(year, week_num, 1))
 final_date = pytz.utc.localize(datetime.fromisocalendar(year, week_num + 1, 1))
-print(f'Date range to parse: {initial_date} - {final_date}')
+print(f'Date range to parse: {initial_date.strftime("%Y-%m-%d")} to {final_date.strftime("%Y-%m-%d")} UTC')
 
 allowed_urls = []
+include_all_urls = True
+
 with open('allowed_urls.txt') as f:
 	allowed_urls = f.read().splitlines()
+
+include_all_urls_input = input(f'Include only allowed URLs? (Enter for Yes): ')
+
+if include_all_urls_input == '':
+   include_all_urls = False 
+
+print(f'Including all the URLS: {include_all_urls}')
 
 book = epub.EpubBook() # Start the ePub library
 
