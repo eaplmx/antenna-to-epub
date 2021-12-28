@@ -1,4 +1,9 @@
-warmedal.se/~bjorn
-text.eapl.mx
-gemini.cyberbot.space/smolzine
 compudanzas.net
+gemini.cyberbot.space/smolzine
+idiomdrottning.org
+inconsistentuniverse.space
+m15o.smol.pub
+rawtext.club/~ploum
+sotiris.papatheodorou.xyz
+text.eapl.mx
+warmedal.se/~bjorn
