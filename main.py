@@ -1,9 +1,6 @@
 """
-The MIT License
-(c) 2021 eapl.mx
-
-A Python script to read the Gemini Antena feed and grab authorized
-URLs into a ePub file
+A Python script to read the Gemini Antena feed (or any Atom XML feed)
+and pack the authorized URLs into an ePub file
 
 Based on following sources:
 https://pypi.org/project/atoma/
@@ -87,13 +84,13 @@ def read_url(url, title='', author=''):
 	if mime.startswith("text/xml"): # Handle XML Atom feed
 		tmpfp = tempfile.NamedTemporaryFile('wb', delete=False)
 		feed = atoma.parse_atom_bytes(fp.read())
-		
+
 		# TODO: Change this avalanche of ifs
 		for entry in feed.entries:
 			if (len(entry.links) > 0):
 				if initial_date < entry.updated < final_date:
 					url_to_read = entry.links[0].href
-					
+
 					if include_all_urls:
 						in_allowed_urls = True
 					else:
@@ -120,7 +117,7 @@ def read_url(url, title='', author=''):
 
 		html = convert_to_html(body, url)
 		html += f'\n<hr><p><a href={url}>{url}</a></p>'
-		
+
 		# Create a chapter in the ePub
 		chapter = epub.EpubHtml(title=f'{author}: {title}', file_name=f'chapter_{str(len(chapters)).rjust(3, "0")}.xhtml', lang='en')
 		chapter.content = html
@@ -148,11 +145,11 @@ def convert_single_line(gmi_line, url):
 
 			if tag == "a":
 				href = groups[0]
-				
+
 				inner_text = str(groups[1]).strip() if len(groups) > 1 else href
 				if inner_text == 'None':
 					inner_text = href
-				
+
 				href = absolutise_url(base=url, relative=href)
 
 				html_a = f"<a href='{href}'>{inner_text}</a>"
@@ -161,7 +158,7 @@ def convert_single_line(gmi_line, url):
 				inner_text = groups[0].strip()
 				return f"<{tag}>{inner_text}</{tag}>"
 	return f"<p>{gmi_line}</p>"
-			
+
 # Reads the contents of the input file line by line and outputs HTML.
 # Renders text in preformat blocks (toggled by ```) as multiline <pre> tags.
 def convert_to_html(text, url):
@@ -186,10 +183,10 @@ def convert_to_html(text, url):
 					if not in_list:
 						in_list = True
 						html += "<ul>\n"
-						
+
 					html += html_line
 				elif in_list:
-					in_list = False 
+					in_list = False
 					html += "</ul>\n"
 					html += html_line
 				else:
@@ -201,8 +198,7 @@ def convert_to_html(text, url):
 
 # Main code starts here
 
-# Get the date range
-# TODO: Ask it from the CLI
+# Get the current year and week number
 year = datetime.now().year
 week_num = datetime.now().isocalendar().week
 
@@ -210,8 +206,11 @@ week_num = datetime.now().isocalendar().week
 # TODO: Fix week_num + 1 error in the last week of the year
 week_num -= 1
 
-print('Select week to read on Antenna')
-selected_year = input(f'Input year (Enter for {year}): ')
+print('--------------------------------')
+print('        Antenna to ePub         ')
+print('--------------------------------')
+print('Select a week to read on Antenna')
+selected_year = input(f'Input year (Press Enter for {year}): ')
 if selected_year.strip() != '':
 	try:
 		year = int(selected_year)
@@ -219,7 +218,7 @@ if selected_year.strip() != '':
 		print('What kind of year is that?')
 		exit()
 
-selected_week = input(f'Input week number (Enter for {week_num}): ')
+selected_week = input(f'Input week number (Press Enter for {week_num}): ')
 if selected_week.strip() != '':
 	try:
 		week_num = int(selected_week)
@@ -229,7 +228,7 @@ if selected_week.strip() != '':
 
 initial_date = pytz.utc.localize(datetime.fromisocalendar(year, week_num, 1))
 final_date = pytz.utc.localize(datetime.fromisocalendar(year, week_num + 1, 1))
-print(f'Date range to parse: {initial_date.strftime("%Y-%m-%d")} to {final_date.strftime("%Y-%m-%d")} UTC')
+print(f'Date range to parse: {initial_date.strftime("%Y-%m-%d")} to {final_date.strftime("%Y-%m-%d")} UTC\n')
 
 allowed_urls = []
 include_all_urls = True
@@ -237,12 +236,12 @@ include_all_urls = True
 with open('allowed_urls.txt') as f:
 	allowed_urls = f.read().splitlines()
 
-include_all_urls_input = input(f'Include only allowed URLs? (Enter for Yes): ')
+include_all_urls_input = input(f'Include only allowed URLs (from allowed_urls.txt)? (Enter for Yes): ')
 
 if include_all_urls_input == '':
-   include_all_urls = False 
+	include_all_urls = False
 
-print(f'Including all the URLS: {include_all_urls}')
+print(f'So... Are you including all the URLs? {include_all_urls}\n')
 
 book = epub.EpubBook() # Start the ePub library
 
@@ -257,11 +256,11 @@ book.add_author('By respective authors')
 
 chapters = [] # Empty list to store every URL into a ePub Chapter
 
-# Read latest entries on Antenna
+# Read latest entries on Antenna Feed
 url = 'gemini://warmedal.se/~antenna/atom.xml'
 read_url(url)
 
-# When we've finished reading the allowed URLs, finish the epub
+# When we've finished reading the allowed URLs, create the epub
 for chapter in chapters:
 	book.add_item(chapter)
 
@@ -275,5 +274,5 @@ book.add_item(epub.EpubNav())
 # Basic spine
 book.spine = ['nav'] + chapters
 
-# Write to the file
+# Write the file
 epub.write_epub(f'antenna-{year}-w{week_num}.epub', book, {})
