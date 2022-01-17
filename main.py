@@ -252,7 +252,7 @@ print(f'Title for the ePub: {title}')
 
 book.set_title(title)
 book.set_language('en')
-book.add_author('By respective authors')
+book.add_author('Rights belong to the author of respective article')
 
 chapters = [] # Empty list to store every URL into a ePub Chapter
 
